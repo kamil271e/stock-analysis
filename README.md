@@ -1,9 +1,9 @@
 # stock-analysis
 Stock data anomaly detection: Apache Kafka Streams
 
-## KafkaProducer guide
+## KafkaProducer
 
-Copy data from bucket to HDFS
+#### Copy data from bucket to HDFS
 ```sh
 hadoop fs -mkdir -p /user/kamil271e
 hadoop fs -mkdir /user/kamil271e/stocks_result
@@ -12,26 +12,18 @@ gsutil cp -r gs://pbd-24-kk/stocks_result ~/gcs_data/
 hadoop fs -put ~/gcs_data/stocks_result/* /user/kamil271e/stocks_result/
 ```
 
-List data to be sure we good to go:
+#### List data to be sure we good to go:
 ```sh
 hadoop fs -ls /user/kamil271e/stocks_result
 ```
 
-
-Start kafka topic:
+#### Run KafkaCSVProducer
+(for now it works on local fs; there was some issues with hdfs):
 ```sh
-kafka-topics.sh --create \
---bootstrap-server ${CLUSTER_NAME}-w-1:9092 \
---replication-factor 2 --partitions 3 --topic stocks-topic
+java -cp "/usr/lib/kafka/libs/*:KafkaCSVProducer.jar" KafkaCSVProducer gcs_data/stocks_result stock-records 1
 ```
 
-Run Kafka producer (for now it works on local fs; there was some issues with hdfs):
-```sh
-java -cp "/usr/lib/kafka/libs/*:KafkaCSVProducer.jar" KafkaCSVProducer gcs_data/stocks_result stocks-topic 1
-```
-
-Troubleshooting TODO:
-
+Troubleshooting on HDFS:
 I've tried to obtain nodename and port with this commands:
 
 ```sh
@@ -41,6 +33,14 @@ hdfs getconf -confKey dfs.namenode.http-address
 
 and then run KafkaProducer using HDFS files:
 ```sh
-java -cp "/usr/lib/kafka/libs/*:KafkaCSVProducer.jar" KafkaCSVProducer hdfs://pbd-cluster-m:9870/user/kamil271e/stocks_result stocks-topic 1
+java -cp "/usr/lib/kafka/libs/*:KafkaCSVProducer.jar" KafkaCSVProducer hdfs://pbd-cluster-m:9870/user/kamil271e/stocks_result stock-records 1
 ```
 but files were not loaded properly:C
+
+## KafkaStreams analyzer:
+```
+CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
+java -cp /usr/lib/kafka/libs/*:KafkaStocks.jar \
+com.example.bigdata.StockRecordToAnomaly ${CLUSTER_NAME}-w-0:9092
+```
+**TODO**: Connect producer and analyzer based on: [link](https://jankiewicz.pl/studenci/bigdata/BS05_w1_23-Kafka-Streams-gcp-zadania.pdf)
