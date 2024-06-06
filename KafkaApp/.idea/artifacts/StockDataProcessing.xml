@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="StockDataProcessing">
+    <output-path>$PROJECT_DIR$/out/artifacts/StockDataProcessing</output-path>
+    <root id="archive" name="StockDataProcessing.jar">
+      <element id="module-output" name="KafkaApp" />
+    </root>
+  </artifact>
+</component>
