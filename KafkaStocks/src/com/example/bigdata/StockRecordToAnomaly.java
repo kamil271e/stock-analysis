@@ -36,7 +36,7 @@ public class StockRecordToAnomaly {
 
         KStream<String, StockDataRecord> stockStream = textLines
                 .filter((key, value) -> StockDataRecord.lineIsCorrect(value))
-                .mapValues(value -> StockDataRecord.parseFromLogLine(value));
+                .mapValues(StockDataRecord::parseFromLogLine);
 
         // Aggregate information on a monthly basis
         KTable<Windowed<String>, StockAggregate> monthlyAggregates = stockStream
