@@ -7,6 +7,10 @@ public class Aggregation {
     private double sumVolume;
     private int count;
     private double avgClose;
+    private String stockSymbol;
+    private String stockName;
+    private int year;
+    private int month;
 
     public Aggregation() {
         this.sumClose = 0.0;
@@ -15,6 +19,10 @@ public class Aggregation {
         this.sumVolume = 0;
         this.count = 0;
         this.avgClose = 0.0;
+        this.stockSymbol = null;
+        this.stockName = null;
+        this.year = 0;
+        this.month = 0;
     }
 
     public Aggregation add(StockData data) {
@@ -51,6 +59,37 @@ public class Aggregation {
         return avgClose;
     }
 
+    public void setSumClose(double sumClose) {
+        this.sumClose = sumClose;
+    }
+    public void setMinLow(double minLow) {
+        this.minLow = minLow;
+    }
+    public void setMaxHigh(double maxHigh) {
+        this.maxHigh = maxHigh;
+    }
+    public void setSumVolume(double sumVolume) {
+        this.sumVolume = sumVolume;
+    }
+    public void setCount(int count) {
+        this.count = count;
+    }
+    public void setAvgClose(double avgClose) {
+        this.avgClose = avgClose;
+    }
+    public void  setStockSymbol(String stockSymbol) {
+        this.stockSymbol = stockSymbol;
+    }
+    public void setStockName(String stockName) {
+        this.stockName = stockName;
+    }
+    public void setYear(int year) {
+        this.year = year;
+    }
+    public void setMonth(int month) {
+        this.month = month;
+    }
+
 
     @Override
     public String toString() {
@@ -62,6 +101,5 @@ public class Aggregation {
                 ", count=" + count + // only for debugging
                 '}';
     }
-
 }
 
