@@ -97,6 +97,8 @@ public class StockDataProcessing {
                         List<Map<String, Object>> fields = new ArrayList<>();
                         fields.add(Map.of("field", "stockSymbol", "type", "string", "optional", true));
                         fields.add(Map.of("field", "stockName", "type", "string", "optional", true));
+                        fields.add(Map.of("field", "year", "type", "int32", "optional", true));
+                        fields.add(Map.of("field", "month", "type", "int32", "optional", true));
                         fields.add(Map.of("field", "avgClose", "type", "int32", "optional", true));
                         fields.add(Map.of("field", "minLow", "type", "int32", "optional", true));
                         fields.add(Map.of("field", "maxHigh", "type", "int32", "optional", true));
@@ -108,6 +110,8 @@ public class StockDataProcessing {
                         logEntry.put("payload", Map.of(
                                 "stockSymbol", stockSymbol,
                                 "stockName", symbolMap.getOrDefault(stockSymbol, ""),
+                                "year", year,
+                                "month", month,
                                 "avgClose", value.getAvgClose(),
                                 "minLow", value.getMinLow(),
                                 "maxHigh", value.getMaxHigh(),
