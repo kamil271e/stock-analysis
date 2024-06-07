@@ -10,10 +10,10 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.state.WindowStore;
 
 import java.time.Duration;
-import java.time.LocalDate;
+
 import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.System.exit;
 
@@ -59,17 +59,8 @@ public class StockDataProcessing {
                     fields[7]);
         }).selectKey((oldKey, value) -> value.getStock());
 
-
-//         It works fine but we will do that later
-//        KStream<String, StockData> mappedStockData = stockData.map((key, value) -> {
-//            String securitySymbol = symbolMap.get(value.getStock());
-//            value.setStock(securitySymbol);
-//            return KeyValue.pair(securitySymbol, value);
-//        });
-//        mappedStockData.peek((key, value) -> System.out.println("[MAPPED]: key=" + key + ", value=" + value));
-
+        AtomicInteger id = new AtomicInteger(0);
         if (delay.equals("A")) {
-//            mappedStockData
             stockData
                     .map((key, value) -> {
                         // Extract year and month from the date
@@ -98,7 +89,31 @@ public class StockDataProcessing {
                         int year = Integer.parseInt(parts[1]);
                         int month = Integer.parseInt(parts[2]);
 
-                        System.out.println("[AGGREGATED] Stock: " + stockSymbol + ", Year: " + year + ", Month: " + month + " -> " + value);
+                        // Construct the JSON payload
+                        Map<String, Object> schema = new HashMap<>();
+                        schema.put("type", "struct");
+                        schema.put("optional", false);
+                        schema.put("version", 1);
+                        List<Map<String, Object>> fields = new ArrayList<>();
+                        fields.add(Map.of("field", "stockSymbol", "type", "string", "optional", true));
+                        fields.add(Map.of("field", "stockName", "type", "string", "optional", true));
+                        fields.add(Map.of("field", "avgClose", "type", "int32", "optional", true));
+                        fields.add(Map.of("field", "minLow", "type", "int32", "optional", true));
+                        fields.add(Map.of("field", "maxHigh", "type", "int32", "optional", true));
+                        fields.add(Map.of("field", "sumVolume", "type", "int32", "optional", true));
+
+                        // Construct the log entry
+                        Map<String, Object> logEntry = new LinkedHashMap<>();
+                        logEntry.put("schema", Map.of("type", "struct", "optional", false, "version", 1, "fields", fields));
+                        logEntry.put("payload", Map.of(
+                                "stockSymbol", stockSymbol,
+                                "stockName", symbolMap.getOrDefault(stockSymbol, ""),
+                                "avgClose", value.getAvgClose(),
+                                "minLow", value.getMinLow(),
+                                "maxHigh", value.getMaxHigh(),
+                                "sumVolume", value.getSumVolume()
+                        ));
+                        System.out.println(id.incrementAndGet() + ";" + logEntry);
                     })
 
                     .to("aggregated-stock-data", Produced.with(WindowedSerdes.timeWindowedSerdeFrom(String.class), new AggregationSerde()));
