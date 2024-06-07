@@ -1,5 +1,9 @@
 package com.example.bigdata;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 public class StockData {
     private String date;
     private double open;
@@ -57,5 +61,9 @@ public class StockData {
                 ", volume=" + volume +
                 ", stock=" + stock
                 + "}";
+    }
+
+    public LocalDateTime getDate() {
+        return LocalDateTime.parse(date, DateTimeFormatter.ISO_DATE_TIME);
     }
 }

@@ -22,6 +22,7 @@ public class AggregationSerializer extends StdSerializer<Aggregation> {
         generator.writeNumberField("minLow", aggregation.getMinLow());
         generator.writeNumberField("maxHigh", aggregation.getMaxHigh());
         generator.writeNumberField("sumVolume", aggregation.getSumVolume());
+        generator.writeNumberField("avgClose", aggregation.getAvgClose());
         generator.writeNumberField("count", aggregation.getCount());
         generator.writeEndObject();
     }
