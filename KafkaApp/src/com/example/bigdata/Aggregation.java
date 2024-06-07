@@ -4,7 +4,7 @@ public class Aggregation {
     private double sumClose;
     private double minLow;
     private double maxHigh;
-    private long sumVolume;
+    private double sumVolume;
     private int count;
 
     public Aggregation() {
@@ -29,6 +29,23 @@ public class Aggregation {
         return ratio > threshold;
     }
 
+    public double getSumClose() {
+        return sumClose;
+    }
+    public double getMinLow() {
+        return minLow;
+    }
+    public double getMaxHigh() {
+        return maxHigh;
+    }
+    public double getSumVolume() {
+        return sumVolume;
+    }
+    public int getCount() {
+        return count;
+    }
+
+
     @Override
     public String toString() {
         return "Aggregation{" +
@@ -39,4 +56,6 @@ public class Aggregation {
                 ", count=" + count +
                 '}';
     }
+
 }
+

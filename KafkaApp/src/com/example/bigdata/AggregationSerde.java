@@ -10,6 +10,7 @@ import java.util.Map;
 public class AggregationSerde implements Serde<Aggregation> {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
     }

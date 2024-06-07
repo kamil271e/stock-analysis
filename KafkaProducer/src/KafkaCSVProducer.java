@@ -32,9 +32,7 @@ public class KafkaCSVProducer {
                 .map(File::getAbsolutePath)
                 .toArray(String[]::new);
         Arrays.sort(listOfPaths);
-        System.out.println(listOfPaths);
 
-        // Process each CSV file
         for (String csvFile : listOfPaths) {
             try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
                 String line;
@@ -43,9 +41,7 @@ public class KafkaCSVProducer {
                 }
                 while ((line = br.readLine()) != null) {
                     System.out.println(line);
-                    // Send CSV line to Kafka topic
                     producer.send(new ProducerRecord<>(topic, line));
-                    Thread.sleep(1000); // Wait for 1 second before sending next line
                 }
             } catch (IOException e) {
                 e.printStackTrace();

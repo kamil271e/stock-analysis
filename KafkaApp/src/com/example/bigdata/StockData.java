@@ -7,10 +7,10 @@ public class StockData {
     private double low;
     private double close;
     private double adjClose;
-    private long volume;
+    private double volume;
     private String stock;
 
-    public StockData(String date, double open, double high, double low, double close, double adjClose, long volume, String stock) {
+    public StockData(String date, double open, double high, double low, double close, double adjClose, double volume, String stock) {
         this.date = date;
         this.open = open;
         this.high = high;
@@ -37,11 +37,25 @@ public class StockData {
         return low;
     }
 
-    public long getVolume() {
+    public double getVolume() {
         return volume;
     }
 
     public double getClose() {
         return close;
+    }
+
+    @Override
+    public String toString() {
+        return "StockData{" +
+                "date=" + date +
+                ", open=" + open +
+                ", high=" + high +
+                ", low=" + low +
+                ", close=" + close +
+                ", adjClose=" + adjClose +
+                ", volume=" + volume +
+                ", stock=" + stock
+                + "}";
     }
 }
