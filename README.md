@@ -52,4 +52,12 @@ stored at out/artifacts
 CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
 kafka-topics.sh --bootstrap-server ${CLUSTER_NAME}-w-0:9092 --list
 ```
-
+## Local setup and run 
+Cheatsheet
+```
+wget https://archive.apache.org/dist/kafka/3.1.0/kafka_2.13-3.1.0.tgz
+cd kafka_2.13-3.1.0/
+bin/zookeeper-server-start.sh config/zookeeper.properties
+bin/kafka-server-start.sh config/server.properties
+bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
+```
