@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="StockDataProcessing">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/StockDataProcessing/out/artifacts/StockDataProcessing/StockDataProcessing.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

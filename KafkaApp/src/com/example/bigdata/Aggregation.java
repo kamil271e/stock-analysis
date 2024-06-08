@@ -1,5 +1,13 @@
 package com.example.bigdata;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 public class Aggregation {
     private double sumClose;
     private double minLow;
@@ -7,10 +15,6 @@ public class Aggregation {
     private double sumVolume;
     private int count;
     private double avgClose;
-    private String stockSymbol;
-    private String stockName;
-    private int year;
-    private int month;
 
     public Aggregation() {
         this.sumClose = 0.0;
@@ -19,10 +23,6 @@ public class Aggregation {
         this.sumVolume = 0;
         this.count = 0;
         this.avgClose = 0.0;
-        this.stockSymbol = null;
-        this.stockName = null;
-        this.year = 0;
-        this.month = 0;
     }
 
     public Aggregation add(StockData data) {
@@ -59,37 +59,6 @@ public class Aggregation {
         return avgClose;
     }
 
-    public void setSumClose(double sumClose) {
-        this.sumClose = sumClose;
-    }
-    public void setMinLow(double minLow) {
-        this.minLow = minLow;
-    }
-    public void setMaxHigh(double maxHigh) {
-        this.maxHigh = maxHigh;
-    }
-    public void setSumVolume(double sumVolume) {
-        this.sumVolume = sumVolume;
-    }
-    public void setCount(int count) {
-        this.count = count;
-    }
-    public void setAvgClose(double avgClose) {
-        this.avgClose = avgClose;
-    }
-    public void  setStockSymbol(String stockSymbol) {
-        this.stockSymbol = stockSymbol;
-    }
-    public void setStockName(String stockName) {
-        this.stockName = stockName;
-    }
-    public void setYear(int year) {
-        this.year = year;
-    }
-    public void setMonth(int month) {
-        this.month = month;
-    }
-
 
     @Override
     public String toString() {
@@ -101,5 +70,51 @@ public class Aggregation {
                 ", count=" + count + // only for debugging
                 '}';
     }
+
+    public String toJsonString(String stockSymbol, String stockName, int year, int month, long id) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+
+        try {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("stockSymbol", stockSymbol);
+            payload.put("stockName", stockName);
+            payload.put("year", year);
+            payload.put("month", month);
+            payload.put("avgClose", getAvgClose());
+            payload.put("minLow", getMinLow());
+            payload.put("maxHigh", getMaxHigh());
+            payload.put("sumVolume", sumVolume);
+
+            Map<String, Object> schema = new LinkedHashMap<>();
+            schema.put("type", "struct");
+            schema.put("optional", false);
+            schema.put("version", 1);
+            List<Map<String, Object>> fields = new ArrayList<>();
+            fields.add(Map.of("field", "stockSymbol", "type", "string", "optional", true));
+            fields.add(Map.of("field", "stockName", "type", "string", "optional", true));
+            fields.add(Map.of("field", "year", "type", "int32", "optional", true));
+            fields.add(Map.of("field", "month", "type", "int32", "optional", true));
+            fields.add(Map.of("field", "avgClose", "type", "float", "optional", true));
+            fields.add(Map.of("field", "minLow", "type", "float", "optional", true));
+            fields.add(Map.of("field", "maxHigh", "type", "float", "optional", true));
+            fields.add(Map.of("field", "sumVolume", "type", "int64", "optional", true));
+            schema.put("fields", fields);
+
+            Map<String, Object> logEntry = new LinkedHashMap<>();
+            logEntry.put("schema", schema);
+            logEntry.put("payload", payload);
+
+            // Use the ObjectMapper to convert the map to a JSON string
+            String jsonLogEntry = objectMapper.writeValueAsString(logEntry);
+
+            // Concatenate id with the JSON string
+            return id + ";" + jsonLogEntry;
+        } catch (Exception e) {
+            throw new RuntimeException("JSON serialization failed", e);
+        }
+    }
+
+
 }
 

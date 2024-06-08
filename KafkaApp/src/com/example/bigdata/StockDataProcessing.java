@@ -3,25 +3,23 @@ package com.example.bigdata;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.*;
-import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.state.WindowStore;
 
 import java.time.Duration;
-
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.lang.System.exit;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class StockDataProcessing {
     public static void main(String[] args) {
         if (args.length < 5) {
             System.err.println("Please provide the following parameters: <topic> <D (days)> <P (percentage)> <delay (A or C)> <bootstrap-servers>");
-            exit(1);
+            System.exit(1);
         }
 
         String topic = args[0]; // temat Kafki
@@ -42,8 +40,7 @@ public class StockDataProcessing {
 
         StreamsBuilder builder = new StreamsBuilder();
         KStream<String, String> source = builder.stream(topic);
-        source.peek((key, value) -> System.out.println())
-                .foreach((key, value) -> System.out.println("[START]: key=" + key + ", value=" + value));
+        source.peek((key, value) -> System.out.println("[START]: key=" + key + ", value=" + value));
 
         Map<String, String> symbolMap = StaticDataLoader.loadStaticData();
         System.out.println("Loaded static data: " + symbolMap.size() + " entries");
@@ -79,14 +76,15 @@ public class StockDataProcessing {
 //
 //                // If the ratio exceeds the threshold P, log the anomaly
 //                if (ratio > P) {
-//                    System.out.println("[ANOMALY]: " + stockSymbol +  "MIN: " + minLow + ", MAX: " + maxHigh + ", RATIO: " + ratio);
+//                    System.out.println("[ANOMALY]: " + stockSymbol + " MIN: " + minLow + ", MAX: " + maxHigh + ", RATIO: " + ratio);
 //                    // You can log additional information here, such as the period and price details
 //                }
 //            }
 //        });
 
         // Aggregation
-        AtomicInteger id = new AtomicInteger(0);
+        AtomicLong id = new AtomicLong(0);
+        TimeWindows timeWindows = TimeWindows.of(Duration.ofDays(D)).grace(Duration.ofDays(1));
         if (delay.equals("A")) {
             stockData
                     .map((key, value) -> {
@@ -115,39 +113,20 @@ public class StockDataProcessing {
                         String stockSymbol = parts[0];
                         int year = Integer.parseInt(parts[1]);
                         int month = Integer.parseInt(parts[2]);
-
-                        // Construct the JSON payload
-                        Map<String, Object> schema = new HashMap<>();
-                        schema.put("type", "struct");
-                        schema.put("optional", false);
-                        schema.put("version", 1);
-                        List<Map<String, Object>> fields = new ArrayList<>();
-                        fields.add(Map.of("field", "stockSymbol", "type", "string", "optional", true));
-                        fields.add(Map.of("field", "stockName", "type", "string", "optional", true));
-                        fields.add(Map.of("field", "year", "type", "int32", "optional", true));
-                        fields.add(Map.of("field", "month", "type", "int32", "optional", true));
-                        fields.add(Map.of("field", "avgClose", "type", "int32", "optional", true));
-                        fields.add(Map.of("field", "minLow", "type", "int32", "optional", true));
-                        fields.add(Map.of("field", "maxHigh", "type", "int32", "optional", true));
-                        fields.add(Map.of("field", "sumVolume", "type", "int32", "optional", true));
-
-                        // Construct the log entry
-                        Map<String, Object> logEntry = new LinkedHashMap<>();
-                        logEntry.put("schema", Map.of("type", "struct", "optional", false, "version", 1, "fields", fields));
-                        logEntry.put("payload", Map.of(
-                                "stockSymbol", stockSymbol,
-                                "stockName", symbolMap.getOrDefault(stockSymbol, ""),
-                                "year", year,
-                                "month", month,
-                                "avgClose", value.getAvgClose(),
-                                "minLow", value.getMinLow(),
-                                "maxHigh", value.getMaxHigh(),
-                                "sumVolume", value.getSumVolume()
-                        ));
-                        System.out.println(id.incrementAndGet() + ";" + logEntry);
+                        System.out.println(value.toJsonString(stockSymbol, symbolMap.getOrDefault(stockSymbol, ""), year, month, id.incrementAndGet()));
                     })
+                    .mapValues((windowedKey, value) -> {
+                        // Extract year and month from the windowed key
+                        String key = windowedKey.key();
+                        String[] parts = key.split("-");
+                        String stockSymbol = parts[0];
+                        int year = Integer.parseInt(parts[1]);
+                        int month = Integer.parseInt(parts[2]);
 
-                    .to("aggregated-stock-data", Produced.with(WindowedSerdes.timeWindowedSerdeFrom(String.class), new AggregationSerde()));
+                        // Create the JSON string
+                        return value.toJsonString(stockSymbol, symbolMap.getOrDefault(stockSymbol, ""), year, month, id.get());
+                    })
+                    .to("aggregated-stock-data", Produced.with(WindowedSerdes.timeWindowedSerdeFrom(String.class), Serdes.String()));
         }
 
 
