@@ -73,7 +73,6 @@ public class Aggregation {
 
     public String toJsonString(String stockSymbol, String stockName, int year, int month, long id) {
         ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
 
         try {
             Map<String, Object> payload = new LinkedHashMap<>();
@@ -109,11 +108,12 @@ public class Aggregation {
             String jsonLogEntry = objectMapper.writeValueAsString(logEntry);
 
             // Concatenate id with the JSON string
-            return id + ";" + jsonLogEntry;
+            return jsonLogEntry;
         } catch (Exception e) {
             throw new RuntimeException("JSON serialization failed", e);
         }
     }
+
 
 
 }
