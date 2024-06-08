@@ -11,7 +11,7 @@ import java.util.Arrays;
 public class KafkaCSVProducer {
 
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
 
         String inputDir = args[0];
         String topic = args[1];
@@ -24,31 +24,26 @@ public class KafkaCSVProducer {
 
         KafkaProducer<String, String> producer = new KafkaProducer<>(props);
 
-        //String[] csvFiles = new String[100];
-
         final File folder = new File(inputDir);
         File[] listOfFiles = folder.listFiles((dir, name) -> name.toLowerCase().endsWith(".csv"));
+        assert listOfFiles != null;
         String[] listOfPaths = Arrays.stream(listOfFiles)
                 .map(File::getAbsolutePath)
                 .toArray(String[]::new);
         Arrays.sort(listOfPaths);
 
         for (String csvFile : listOfPaths) {
-            try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(csvFile))) {
                 String line;
-                for(int i = 0; i <= Integer.parseInt(header); i++){
-                    br.readLine();
-                }
-                while ((line = br.readLine()) != null) {
-                    System.out.println(line);
+                for(int i = 0; i <= Integer.parseInt(header); i++) reader.readLine();
+                while ((line = reader.readLine()) != null) {
                     producer.send(new ProducerRecord<>(topic, line));
+                    System.out.println(line);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-
-        // Close Kafka Producer
         producer.close();
     }
 }
