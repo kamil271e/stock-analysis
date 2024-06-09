@@ -2,6 +2,7 @@
 Stock data anomaly detection: Apache Kafka Streams
 
 ## GCP setup and running
+**Most of files that should be uploaded to cluster in further steps are included in ```/gcp```.** <br> <br>
 Step one is to download ``stocks_result`` data from [link](http://www.cs.put.poznan.pl/kjankiewicz/bigdata/stream_project). 
 
 Then create GCP cluster:
@@ -24,7 +25,7 @@ hadoop fs -copyToLocal gs://<YOUR_BUCKET_NAME>/stocks_result ~/data
 ```
 
 ### Initialize all topics / delete them if any exists
-Upload all files from scripts and chmod them to be executable, then run ``init_topics.sh``:
+Upload all shell files from ``/gcp`` and chmod them to be executable, then run ``init_topics.sh``:
 ```sh
 chmod +x init_topics.sh
 chmod +x delete_topics.sh
@@ -59,7 +60,7 @@ mkdir static
 mv symbols_valid_meta.csv static/symbols_valid_meta.csv
 ```
 
-Open yet another **two** cloud shells and copy both ```app.jar``` and ```producer.jar```. <br> <br>
+Open yet another **two** cloud shells and upload both ```app.jar``` and ```producer.jar```. <br> <br>
 First shell, run main app:
 ```sh
 CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
