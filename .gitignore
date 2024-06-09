@@ -25,6 +25,5 @@ replay_pid*
 
 KafkaStocks/.idea/**
 KafkaProducer/stocks_result
-PROJEKT BIGDATA
 *.csv
 .ipynb_checkpoints
