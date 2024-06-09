@@ -129,6 +129,5 @@ public class Aggregation {
         );
         return schema;
     }
-
 }
 
