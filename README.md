@@ -1,63 +1,108 @@
 # stock-analysis
 Stock data anomaly detection: Apache Kafka Streams
 
-## KafkaProducer
+## GCP setup and running
+Step one is to download ``stocks_result`` data from [link](http://www.cs.put.poznan.pl/kjankiewicz/bigdata/stream_project). 
 
-#### Copy data from bucket to local file system
+Then create GCP cluster:
 ```sh
-mkdir -p ~/gcs_data/stocks_result
-gsutil cp -r gs://pbd-24-kk/stocks_result ~/gcs_data/
+gcloud dataproc clusters create ${CLUSTER_NAME} \
+--enable-component-gateway --region ${REGION} --subnet default \
+--master-machine-type n1-standard-2 --master-boot-disk-size 50 \
+--num-workers 2 --worker-machine-type n1-standard-2 --worker-boot-disk-size 50 \
+--image-version 2.1-debian11 --optional-components ZEPPELIN,ZOOKEEPER \
+--project ${PROJECT_ID} --max-age=3h \
+--metadata "run-on-master=true" \
+--initialization-actions \
+gs://goog-dataproc-initialization-actions-${REGION}/kafka/kafka.sh
 ```
+And store downloaded data in your bucket. For next instructions you need to open cluster shell.
 
-#### Run KafkaCSVProducer
+### Copy data from bucket to local file system
 ```sh
-java -cp "/usr/lib/kafka/libs/*:KafkaCSVProducer.jar" KafkaCSVProducer gcs_data/stocks_result stock-records 1
+hadoop fs -copyToLocal gs://<YOUR_BUCKET_NAME>/stocks_result ~/data
 ```
 
-## KafkaStreams analyzer:
-```
+### Initialize all topics / delete them if any exists
+Upload all files from scripts and chmod them to be executable, then run ``init_topics.sh``:
+```sh
+chmod +x init_topics.sh
+chmod +x delete_topics.sh
+chmod +x init_db.sh
 CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
-java -cp /usr/lib/kafka/libs/*:StockDataProcessing.jar \
-com.example.bigdata.StockDataProcessing stock-records 10 1 A ${CLUSTER_NAME}-w-0:9092
+./init_topics.sh ${CLUSTER_NAME}-w-0:9092
 ```
 
-**TODO**: Connect producer and analyzer based on: [link](https://jankiewicz.pl/studenci/bigdata/BS05_w1_23-Kafka-Streams-gcp-zadania.pdf)
-
-
-#### Random notes:
-
-* Create project:
-
-file -> project structure -> libraries -> from maven
-
-paste lib:
-
-```
-org.apache.kafka:kafka-clients:3.1.0
-org.apache.kafka:kafka-streams:3.1.0
-```
-
-* Add inpuy params in intelij:
-ALT+SHIFT+F10, Right, Edit
-
-* Generate jar:
-file -> project structure -> artifacts -> add empty; add module <br>
-build -> build artifacts
-
-stored at out/artifacts
-
-* Topic list:
-
-```
+To delete all topics simply run
+```sh
 CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
-kafka-topics.sh --bootstrap-server ${CLUSTER_NAME}-w-0:9092 --list
+./delete_topics.sh ${CLUSTER_NAME}-w-0:9092
 ```
+
+### Setup consumers
+Open **two more** cloud shells, one will be consuming anomaly events and second one ETL image. <br> <br>
+First shell (Anomaly):
+```sh
+CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
+kafka-console-consumer.sh --bootstrap-server ${CLUSTER_NAME}-w-0:9092 --topic anomaly-stock-data 
+```
+Second shell (ETL):
+```sh
+CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
+kafka-console-consumer.sh --bootstrap-server ${CLUSTER_NAME}-w-0:9092 --topic aggregated-stock-data
+```
+### Running
+#### Main application
+Firstly upload ``symbols_valid_meta.csv`` that can be downloaded from [link](http://www.cs.put.poznan.pl/kjankiewicz/bigdata/stream_project). Then put it into static directory:
+```sh
+mkdir static
+mv symbols_valid_meta.csv static/symbols_valid_meta.csv
+```
+
+Open yet another **two** cloud shells and copy both ```app.jar``` and ```producer.jar```. <br> <br>
+First shell, run main app (example params: D=10, P=40, delay=A):
+```sh
+CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
+java -cp /usr/lib/kafka/libs/*:app.jar com.example.bigdata.StockDataProcessing read-stock-data <D> <P> <delay> ${CLUSTER_NAME}-w-0:9092
+```
+Second shell run Kafka producer:
+```sh
+CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
+java -cp /usr/lib/kafka/libs/*:producer.jar KafkaCSVProducer data read-stock-data 1
+```
+# TODO: connector setup + db
+
+
 ## Local setup and run 
-Cheatsheet
+In order to run this app on your local linux system: download kafka, run zookeper and kafka server
 ```
-wget https://archive.apache.org/dist/kafka/3.1.0/kafka_2.13-3.1.0.tgz
+wget https://archive.apache.org/dist/kafka/3.1.0/kafka_2.13-3.1.0.tgz # in home directory
 cd kafka_2.13-3.1.0/
 bin/zookeeper-server-start.sh config/zookeeper.properties
 bin/kafka-server-start.sh config/server.properties
-bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
 ```
+
+Add kafka to PATH
+```
+export PATH="~/kafka_2.13-3.1.0/bin
+```
+
+Delete topics and init new ones
+```
+cd scripts
+chmod +x init_topics.sh
+chmod +x delete_topics.sh
+./delete_topics.sh localhost:9092
+./init_topics.sh localhost:9092
+```
+
+Run consumers for ETL and anomaly detection:
+```
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic aggregated-stock-data
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic anomaly-stock-data
+```
+
+To run producer and main app open ```KafkaProducer``` and ```KafkaApp``` in Intellij.
+And run the both setting appropriate input args. <br>
+**TODO**: setup instruction
+
