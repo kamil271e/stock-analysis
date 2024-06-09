@@ -8,7 +8,7 @@ import java.util.Map;
 
 // Load static dataset into a hashmap (symbol -> security name)
 public class StaticDatasetMapper {
-    private static final String path = "data/symbols_valid_meta.csv";
+    private static final String path = "static/symbols_valid_meta.csv";
     public static Map<String, String> loadAndMap() {
         Map<String, String> symbolToName = new HashMap<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(path))) {

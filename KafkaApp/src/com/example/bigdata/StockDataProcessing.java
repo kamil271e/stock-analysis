@@ -15,7 +15,7 @@ public class StockDataProcessing {
             System.exit(1);
         }
         String AGGREGATION_TOPIC = "aggregated-stock-data";
-        String ANOMALY_TOPIC = "anomalies";
+        String ANOMALY_TOPIC = "anomaly-stock-data";
         String AGGREGATION_STORE = "aggregated-stream-store";
         String APPLICATION_ID = "stock-data-processor";
 
