@@ -10,7 +10,7 @@ gcloud dataproc clusters create ${CLUSTER_NAME} \
 --enable-component-gateway --region ${REGION} --subnet default \
 --master-machine-type n1-standard-2 --master-boot-disk-size 50 \
 --num-workers 2 --worker-machine-type n1-standard-2 --worker-boot-disk-size 50 \
---image-version 2.1-debian11 --optional-components ZEPPELIN,ZOOKEEPER \
+--image-version 2.1-debian11 --optional-components DOCKER,ZOOKEEPER \
 --project ${PROJECT_ID} --max-age=3h \
 --metadata "run-on-master=true" \
 --initialization-actions \
@@ -60,18 +60,44 @@ mv symbols_valid_meta.csv static/symbols_valid_meta.csv
 ```
 
 Open yet another **two** cloud shells and copy both ```app.jar``` and ```producer.jar```. <br> <br>
-First shell, run main app (example params: D=10, P=40, delay=A):
+First shell, run main app:
 ```sh
 CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
 java -cp /usr/lib/kafka/libs/*:app.jar com.example.bigdata.StockDataProcessing read-stock-data <D> <P> <delay> ${CLUSTER_NAME}-w-0:9092
 ```
+* If you want to get a lot of results use these params: ``D=10, P=10, delay=A``
+* If you want to have just a few anomalies use: ```D=10, P=55, delay=A``` (Feel free to play with those)
+
 Second shell run Kafka producer:
 ```sh
 CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
 java -cp /usr/lib/kafka/libs/*:producer.jar KafkaCSVProducer data read-stock-data 1
 ```
-# TODO: connector setup + db
+### Connector for ETL
+Init connection:
+```
+./init_db.sh
+```
 
+If getting this alert:
+```
+docker: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?.
+```
+Set the passwd and start docker deamon:
+```
+sudo passwd
+systemctl start docker
+```
+
+Run sink connector
+```sh
+/usr/lib/kafka/bin/connect-standalone.sh connect-standalone.properties connect-jdbc-sink.properties
+```
+
+To get data from db run following query:
+```sh
+docker exec -i mymysql mysql -u streamuser -pstream streamdb -e "select * from stockETL;"
+```
 
 ## Local setup and run 
 In order to run this app on your local linux system: download kafka, run zookeper and kafka server
