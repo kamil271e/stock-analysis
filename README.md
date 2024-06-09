@@ -46,7 +46,7 @@ First shell (Anomaly):
 CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
 kafka-console-consumer.sh --bootstrap-server ${CLUSTER_NAME}-w-0:9092 --topic anomaly-stock-data 
 ```
-Second shell (ETL):
+Second shell (ETL): (this is optional, ETL image will be store in mysql databae later)
 ```sh
 CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
 kafka-console-consumer.sh --bootstrap-server ${CLUSTER_NAME}-w-0:9092 --topic aggregated-stock-data
@@ -73,10 +73,11 @@ Second shell run Kafka producer:
 CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
 java -cp /usr/lib/kafka/libs/*:producer.jar KafkaCSVProducer data read-stock-data 1
 ```
+
 ### Connector for ETL
 Init connection:
 ```
-./init_db.sh
+sudo ./init_db.sh
 ```
 
 If getting this alert:
@@ -88,8 +89,7 @@ Set the passwd and start docker deamon:
 sudo passwd
 systemctl start docker
 ```
-
-Run sink connector
+Run sink connector (after ``./init_db`` ends)
 ```sh
 /usr/lib/kafka/bin/connect-standalone.sh connect-standalone.properties connect-jdbc-sink.properties
 ```
@@ -99,7 +99,7 @@ To get data from db run following query:
 docker exec -i mymysql mysql -u streamuser -pstream streamdb -e "select * from stockETL;"
 ```
 
-## Local setup and run 
+<!--## Local setup and run 
 In order to run this app on your local linux system: download kafka, run zookeper and kafka server
 ```
 wget https://archive.apache.org/dist/kafka/3.1.0/kafka_2.13-3.1.0.tgz # in home directory
@@ -130,5 +130,5 @@ kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic anomaly-stoc
 
 To run producer and main app open ```KafkaProducer``` and ```KafkaApp``` in Intellij.
 And run the both setting appropriate input args. <br>
-**TODO**: setup instruction
+**TODO**: setup instruction--!>
 
