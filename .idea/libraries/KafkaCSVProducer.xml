@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="KafkaCSVProducer">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/KafkaProducer/out/artifacts/KafkaCSVProducer/KafkaCSVProducer.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
