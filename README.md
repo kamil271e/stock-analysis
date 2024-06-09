@@ -1,5 +1,10 @@
 # stock-analysis
-Stock data anomaly detection: Apache Kafka Streams
+Stock data processing and anomaly detection: Apache Kafka Streams
+##  Solution architecture
+![architecture](https://github.com/kamil271e/stock-analysis/assets/82380348/b7795f8b-5ab8-4d63-835c-0db57327ae7e)
+
+Source: [link](https://jankiewicz.pl/)
+
 
 ## GCP setup and running
 **Most of files that should be uploaded to cluster in further steps are included in ```/gcp```.** <br> <br>
