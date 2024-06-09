@@ -10,7 +10,9 @@ import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.state.WindowStore;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class StockDataProcessing {
     public static void main(String[] args) {
@@ -45,21 +47,52 @@ public class StockDataProcessing {
         }).selectKey((oldKey, value) -> value.getStock());
 
 
-        // AGGREGATION
-        stockData.map((key, value) -> new KeyValue<>(value.getStock() + "-" + value.getDate().getYear() + "-" + value.getDate().getMonthValue(), value))
-                .groupByKey(Grouped.with(Serdes.String(), new StockDataSerde()))
-                .windowedBy(TimeWindows.of(Duration.ofDays(30)).grace(Duration.ofDays(1)))
-                .aggregate(Aggregation::new, (aggKey, newValue, aggValue) -> aggValue.add(newValue), Materialized.<String, Aggregation, WindowStore<Bytes, byte[]>>as(AGGREGATION_STORE).withKeySerde(Serdes.String()).withValueSerde(new AggregationSerde()))
-                .toStream()
-                .peek((windowedKey, value) -> {
-                    String[] parts = windowedKey.key().split("-");
-                    System.out.println(value.toSchema(parts[0], symbolToNameMap.getOrDefault(parts[0], ""), Integer.parseInt(parts[1]), Integer.parseInt(parts[2])));
-                })
-                .mapValues((windowedKey, value) -> {
-                    String[] parts = windowedKey.key().split("-");
-                    return value.toSchema(parts[0], symbolToNameMap.getOrDefault(parts[0], ""), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
-                })
-                .to(AGGREGATION_TOPIC, Produced.with(WindowedSerdes.timeWindowedSerdeFrom(String.class), Serdes.String()));
+        // ETL_IMAGE
+//        stockData.map((key, value) -> new KeyValue<>(value.getStock() + "-" + value.getDate().getYear() + "-" + value.getDate().getMonthValue(), value))
+//                .groupByKey(Grouped.with(Serdes.String(), new StockDataSerde()))
+//                .windowedBy(TimeWindows.of(Duration.ofDays(30)).grace(Duration.ofDays(1)))
+//                .aggregate(Aggregation::new, (aggKey, newValue, aggValue) -> aggValue.add(newValue), Materialized.<String, Aggregation, WindowStore<Bytes, byte[]>>as(AGGREGATION_STORE).withKeySerde(Serdes.String()).withValueSerde(new AggregationSerde()))
+//                .toStream()
+//                .peek((windowedKey, value) -> {
+//                    String[] parts = windowedKey.key().split("-");
+//                    System.out.println(value.toSchema(parts[0], symbolToNameMap.getOrDefault(parts[0], ""), Integer.parseInt(parts[1]), Integer.parseInt(parts[2])));
+//                })
+//                .mapValues((windowedKey, value) -> {
+//                    String[] parts = windowedKey.key().split("-");
+//                    return value.toSchema(parts[0], symbolToNameMap.getOrDefault(parts[0], ""), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+//                })
+//                .to(AGGREGATION_TOPIC, Produced.with(WindowedSerdes.timeWindowedSerdeFrom(String.class), Serdes.String()));
+
+
+        // ANOMALY DETECTION
+        Map<String, List<StockData>> stockDataHistory = new HashMap<>();
+        stockData.foreach((key, value) -> {
+            String stockSymbol = value.getStock();
+            List<StockData> history = stockDataHistory.computeIfAbsent(stockSymbol, k -> new ArrayList<>());
+            history.add(value);
+            if (history.size() >= D) {
+                LocalDate endDate = value.getDate().toLocalDate();
+                LocalDate startDate = endDate.minusDays(D - 1);
+                LocalDate finalStartDate = startDate;
+                List<StockData> filteredHistory = history.stream()
+                        .filter(data -> data.getStock().equals(stockSymbol))
+                        .filter(data -> data.getDate().toLocalDate().isAfter(finalStartDate.minusDays(1)) &&
+                                data.getDate().toLocalDate().isBefore(endDate.plusDays(1)))
+                        .collect(Collectors.toList());
+
+                double maxHigh = filteredHistory.stream().mapToDouble(StockData::getHigh).max().orElse(0);
+                double minLow = filteredHistory.stream().mapToDouble(StockData::getLow).min().orElse(0);
+                double ratio = (maxHigh - minLow) / maxHigh;
+
+                if (ratio > P) {
+                    System.out.println("[ANOMALY]: Stock Symbol: " + stockSymbol +
+                            ", Analyzed Period: " + startDate + " to " + endDate +
+                            ", Max High: " + maxHigh +
+                            ", Min Low: " + minLow +
+                            ", Ratio: " + ratio);
+                }
+            }
+        });
 
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
 
